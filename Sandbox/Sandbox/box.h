@@ -16,6 +16,6 @@ typedef enum {
 void initBox();
 void updateBox(Window* _window);
 void displayBox(Window* _window);
-sfBool isInBounds(sfVector2i _v);
+sfBool isInBounds(int _j, int _i);
 sfBool isSolid(int _j, int _i);
 void changeBlock(Types _type, int _j, int _i);

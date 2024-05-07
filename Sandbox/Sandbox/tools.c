@@ -29,6 +29,12 @@ sfVector2f vector2f(float _x, float _y)
 	return v;
 }
 
+sfVector2i vector2i(int _x, int _y)
+{
+	sfVector2i v = { _x, _y };
+	return v;
+}
+
 sfVector2f MultiplyVector2f(sfVector2f _v, float _m)
 {
 	_v.x *= _m;

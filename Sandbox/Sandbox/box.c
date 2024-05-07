@@ -8,9 +8,11 @@ typedef struct {
 Block b[BLOCK_Y_RATIO][BLOCK_X_RATIO];
 
 typedef enum {
-	GO_BOTTOM_LEFT,
-	GO_BOTTOM_RIGHT,
-}Go;
+	DIR_NO_DIR,
+	DIR_BOTTOM,
+	DIR_BOTTOM_LEFT,
+	DIR_BOTTOM_RIGHT
+}Direction;
 
 sfRectangleShape* boxRectangle;
 
@@ -33,18 +35,17 @@ void initBox()
 
 void updateBox(Window* _window)
 {
-	static float dropTimer = 0.f;
 	float dt = getDeltaTime();
-	dropTimer += dt;
 
-	if (dropTimer > -0.2f && sfRenderWindow_hasFocus(_window->renderWindow) && sfMouse_isButtonPressed(sfMouseLeft))
+	if (sfRenderWindow_hasFocus(_window->renderWindow) && sfMouse_isButtonPressed(sfMouseLeft))
 	{
-		dropTimer = 0.f;
 		sfVector2f mousePos = getfMousePos(_window->renderWindow);
 		mousePos = MultiplyVector2f(mousePos, 1.f / BLOCK_SCALE);
 		sfVector2i iMousePos = V2fToV2i(mousePos);
-		if (isInBounds(iMousePos)) {
-			b[iMousePos.y][iMousePos.x].type = SAND;
+		if (isInBounds(iMousePos.y, iMousePos.x)) {
+			if (b[iMousePos.y][iMousePos.x].type == NO_TYPE) {
+				b[iMousePos.y][iMousePos.x].type = SAND;
+			}
 		}
 	}
 
@@ -56,12 +57,39 @@ void updateBox(Window* _window)
 			{
 			case SAND:
 				if (j + 1 < BLOCK_Y_RATIO) {
+					Direction sandDir = DIR_NO_DIR;
+					sfVector2i target = vector2i(i, j);
 					if (!isSolid(j + 1, i)) {
-						b[j][i].moveTimer += dt;
-						if (b[j][i].moveTimer > 0.1f) {
-							changeBlock(NO_TYPE, j, i);
-							changeBlock(SAND, j + 1, i);
+						sandDir = DIR_BOTTOM;
+						target = vector2i(i, j + 1);
+
+					}
+					if (b[j + 1][i].type == SAND && isInBounds(j + 1, i - 1)) {
+						if (!isSolid(j + 1, i - 1)) {
+							sandDir = DIR_BOTTOM_LEFT;
+							target = vector2i(i - 1, j + 1);
 						}
+					}
+					if (b[j + 1][i].type == SAND && isInBounds(j + 1, i + 1)) {
+						if (!isSolid(j + 1, i + 1)) {
+							if (sandDir == DIR_BOTTOM_LEFT) {
+								int sandRandom = rand() % 2;
+								if (sandRandom == 0) {
+									sandDir = DIR_BOTTOM_RIGHT;
+									target = vector2i(i + 1, j + 1);
+								}
+							}
+							else {
+								target = vector2i(i + 1, j + 1);
+								sandDir = DIR_BOTTOM_RIGHT;
+							}
+						}
+					}
+
+					b[j][i].moveTimer += dt;
+					if (b[j][i].moveTimer > 0.02f) {
+						changeBlock(NO_TYPE, j, i);
+						changeBlock(SAND, target.y, target.x);
 					}
 				}
 				break;
@@ -99,9 +127,9 @@ void displayBox(Window* _window)
 	sfRenderTexture_drawRectangleShape(_window->renderTexture, boxRectangle, NULL);
 }
 
-sfBool isInBounds(sfVector2i _v)
+sfBool isInBounds(int _j, int _i)
 {
-	if (_v.x < 0 || _v.y < 0 || _v.x >= BLOCK_X_RATIO || _v.y >= BLOCK_Y_RATIO)
+	if (_i < 0 || _j < 0 || _i >= BLOCK_X_RATIO || _j >= BLOCK_Y_RATIO)
 		return sfFalse;
 
 	return sfTrue;
